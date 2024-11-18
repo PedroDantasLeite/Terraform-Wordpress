@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logando no Amazon ECR..."
+      - aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin ${REPOSITORY_URI}
+  build:
+    commands:
+      - echo "Construindo imagem Docker..."
+      - docker build -t ${REPOSITORY_URI}:latest .
+      - docker tag ${REPOSITORY_URI}:latest ${REPOSITORY_URI}:latest
+  post_build:
+    commands:
+      - echo "Enviando imagem para o ECR..."
+      - docker push ${REPOSITORY_URI}:latest
+      - echo "Criando arquivo imagedefinitions.json..."
+      - printf '[{"name":"wordpress-container","imageUri":"%s"}]' ${REPOSITORY_URI}:latest > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
